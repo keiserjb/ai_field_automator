@@ -48,7 +48,7 @@ class AIFieldAutomatorTelephone extends AIFieldAutomatorBase {
       }
       foreach ($rows as $row) {
         $candidate = trim((string) ($row['value'] ?? ''));
-        if (preg_match('/^\+\(?[0-9]{1,3}\]?[ ]?[0-9]{6,12}$/', $candidate)) {
+        if (preg_match('/^\+\(?[0-9]{1,3}\)?[ ]?[0-9]{6,12}$/', $candidate)) {
           $values[] = $candidate;
         }
       }

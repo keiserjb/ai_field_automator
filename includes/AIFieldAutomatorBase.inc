@@ -60,7 +60,7 @@ abstract class AIFieldAutomatorBase implements
     if (empty($values)) {
       return;
     }
-    $field_info = field_info_field($field_name);
+    $field_info = field_info_field($field_name) ?: [];
     $primary_column = $this->getPrimaryColumn($field_info);
     $lang = LANGUAGE_NONE;
 
@@ -416,7 +416,7 @@ abstract class AIFieldAutomatorBase implements
    * @return string
    *   Primary column name, defaulting to "value".
    */
-  protected function getPrimaryColumn(array $field_info) {
+  protected function getPrimaryColumn(?array $field_info = []) {
     if (!empty($field_info['columns']) && is_array($field_info['columns'])) {
       $keys = array_keys($field_info['columns']);
       if (!empty($keys[0])) {
@@ -438,7 +438,7 @@ abstract class AIFieldAutomatorBase implements
    *   Optional array of file objects for vision-capable models.
    *
    * @return string
-   *   The AI-generated text, or empty string on error.
+   *   The AI-generated text, or empty string on error or guardrail block.
    */
   protected function callAI($prompt, array $config, array $files = []) {
     $model = $config['model'] ?? '';
@@ -447,6 +447,22 @@ abstract class AIFieldAutomatorBase implements
 
     if (empty($model) || empty($prompt)) {
       return '';
+    }
+
+    // Run guardrails ourselves, rather than relying solely on ai_chat()'s
+    // internal alter hooks: automator output is saved straight into an
+    // entity field, so we need to positively distinguish "blocked" from
+    // "generated text" rather than risk a guardrail's blocked-message
+    // string getting persisted as if it were real AI content. We pass
+    // disable_guardrails to ai_chat() below so the check only runs once.
+    $guardrails_available = function_exists('ai_guardrails_run');
+    if ($guardrails_available) {
+      $pre = ai_guardrails_run($prompt, 'pre', 'field_generation');
+      if ($pre['blocked']) {
+        watchdog('ai_field_automator', 'AI field generation skipped: prompt blocked by guardrail @id.', ['@id' => $pre['guardrail_id']], WATCHDOG_WARNING);
+        return '';
+      }
+      $prompt = $pre['text'];
     }
 
     $content = [
@@ -516,18 +532,35 @@ abstract class AIFieldAutomatorBase implements
         $temperature,
         $max_tokens,
         FALSE,
-        ['operation' => 'field_generation']
+        ['operation' => 'field_generation', 'disable_guardrails' => $guardrails_available]
       );
+
+      $text = '';
       // All provider adapters return the content string directly.
       if (is_string($response) && trim($response) !== '') {
-        return trim($response);
+        $text = trim($response);
       }
       // Fallback: handle raw array format from any adapter that may return it.
-      if (is_array($response)
+      elseif (is_array($response)
         && !empty($response['choices'][0]['message']['content'])
       ) {
-        return trim($response['choices'][0]['message']['content']);
+        $text = trim($response['choices'][0]['message']['content']);
       }
+
+      if ($text === '') {
+        return '';
+      }
+
+      if ($guardrails_available) {
+        $post = ai_guardrails_run($text, 'post', 'field_generation');
+        if ($post['blocked']) {
+          watchdog('ai_field_automator', 'AI field generation discarded: response blocked by guardrail @id.', ['@id' => $post['guardrail_id']], WATCHDOG_WARNING);
+          return '';
+        }
+        $text = $post['text'];
+      }
+
+      return $text;
     }
     catch (\Exception $e) {
       watchdog(

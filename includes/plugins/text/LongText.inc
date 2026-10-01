@@ -62,7 +62,7 @@ class AIFieldAutomatorLongText extends AIFieldAutomatorBase {
     }
     $lang = LANGUAGE_NONE;
     $field_info = field_info_field($field_name);
-    $is_summary_field = ($field_info['type'] === 'text_with_summary');
+    $is_summary_field = (!empty($field_info['type']) && $field_info['type'] === 'text_with_summary');
 
     $items = [];
     foreach ($values as $delta => $value) {

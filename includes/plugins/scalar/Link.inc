@@ -43,7 +43,7 @@ class AIFieldAutomatorLink extends AIFieldAutomatorBase {
       }
 
       $rows = $this->decodeJsonPayload($text);
-      if (empty($rows) && preg_match('/https?:\/\/[^\s"<>\]]+/i', $text, $m)) {
+      if (empty($rows) && preg_match('/https?:\/\/[^\s"<>\)\]]+/i', $text, $m)) {
         $rows = [['value' => ['uri' => $m[0], 'title' => '']]];
       }
 
@@ -78,25 +78,21 @@ class AIFieldAutomatorLink extends AIFieldAutomatorBase {
     if (empty($values)) {
       return;
     }
-    $field_info = field_info_field($field_name);
+    $field_info = field_info_field($field_name) ?: [];
     $columns = array_keys($field_info['columns'] ?? []);
-    $uri_key = in_array('uri', $columns, TRUE)
-      ? 'uri'
-      : (in_array(
-        'url',
-        $columns,
-        TRUE
-      )
-        ? 'url'
+    $uri_key = in_array('url', $columns, TRUE) || empty($columns)
+      ? 'url'
+      : (in_array('uri', $columns, TRUE)
+        ? 'uri'
         : (in_array('value', $columns, TRUE) ? 'value'
-          : ($columns[0] ?? 'value')));
-    $title_key = in_array('title', $columns, TRUE) ? 'title' : NULL;
+          : ($columns[0] ?? 'url')));
+    $title_key = in_array('title', $columns, TRUE) || empty($columns) ? 'title' : NULL;
 
     $items = [];
     foreach ($values as $delta => $value) {
-      $items[$delta][$uri_key] = $value['uri'];
+      $items[$delta][$uri_key] = $value['url'] ?? $value['uri'] ?? '';
       if ($title_key !== NULL) {
-        $items[$delta][$title_key] = $value['title'];
+        $items[$delta][$title_key] = $value['title'] ?? '';
       }
     }
     $entity->{$field_name}[LANGUAGE_NONE] = $items;

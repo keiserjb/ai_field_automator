@@ -131,7 +131,13 @@ class AIFieldAutomatorTaxonomyTerms extends AIFieldAutomatorBase {
     $items = [];
     $created = [];
     foreach ($values as $value) {
-      $tid = $this->findTidByName($value, $term_map);
+      $tid = 0;
+      if (is_numeric($value)) {
+        $tid = (int) $value;
+      }
+      else {
+        $tid = $this->findTidByName($value, $term_map);
+      }
       if (!$tid && $allow_create && !empty($vids[0])) {
         $tid = $this->createTerm($value, $vids[0]);
         if ($tid) {

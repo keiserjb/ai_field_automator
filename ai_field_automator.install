@@ -28,31 +28,17 @@ function ai_field_automator_requirements($phase) {
 }
 
 /**
- * Migrate legacy OpenAI automator config and disable the old module.
+ * Copy legacy Field Automator configuration into the AI namespace.
+ *
+ * Non-destructive: legacy config is kept and the legacy module stays enabled
+ * until the operator completes the cutover with AI Upgrade.
  */
 function ai_field_automator_update_1000() {
-  $old_prefix = 'openai_field_automator.';
-  $new_prefix = 'ai_field_automator.';
-
-  foreach (config_get_names_with_prefix($old_prefix) as $config_name) {
-    $old = config($config_name);
-    $data = $old->get();
-    if (empty($data)) {
-      continue;
-    }
-
-    $new_name = $new_prefix . substr($config_name, strlen($old_prefix));
-    $new = config($new_name);
-    $new->setData($data);
-    $new->save();
-    $old->delete();
+  if (!module_load_install('ai_upgrade')) {
+    return t('AI Upgrade helpers unavailable; legacy Field Automator configuration not migrated.');
   }
-
-  if (module_exists('openai_field_automator')) {
-    module_disable(['openai_field_automator']);
-  }
-
-  return t('Migrated OpenAI Field Automator configuration to AI Field Automator.');
+  $result = ai_upgrade_module_install('ai_field_automator');
+  return t('Copied @count legacy Field Automator config object(s).', ['@count' => $result['migrated']]);
 }
 
 /**

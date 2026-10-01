@@ -83,10 +83,18 @@ class AIFieldAutomatorAddress extends AIFieldAutomatorBase {
       return;
     }
 
-    $field_info = field_info_field($field_name);
-    if (empty($field_info['columns'])) {
-      return;
-    }
+    $field_info = field_info_field($field_name) ?: [];
+    $columns = !empty($field_info['columns']) ? array_keys($field_info['columns']) : [
+      'country',
+      'thoroughfare',
+      'premise',
+      'locality',
+      'administrative_area',
+      'postal_code',
+      'name_line',
+      'first_name',
+      'last_name',
+    ];
 
     $items = [];
     foreach ($values as $value) {
@@ -94,7 +102,7 @@ class AIFieldAutomatorAddress extends AIFieldAutomatorBase {
         continue;
       }
       $item = [];
-      foreach (array_keys($field_info['columns']) as $column) {
+      foreach ($columns as $column) {
         $mapped = $this->mapColumnValue($column, $value);
         if ($mapped !== '') {
           $item[$column] = $mapped;
