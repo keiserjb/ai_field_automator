@@ -73,13 +73,9 @@ class AIFieldAutomatorChartFromText extends AIFieldAutomatorBase {
       return;
     }
 
-    $field_info = field_info_field($field_name);
-    if (empty($field_info['columns'])) {
-      return;
-    }
-
-    $columns = array_keys($field_info['columns']);
-    $primary = $this->getPrimaryColumn($field_info);
+    $field_info = field_info_field($field_name) ?: [];
+    $columns = !empty($field_info['columns']) ? array_keys($field_info['columns']) : ['value'];
+    $primary = !empty($field_info) ? $this->getPrimaryColumn($field_info) : 'value';
     $csv = (string) $values[0];
 
     // Generic fallback: store raw CSV in primary column.

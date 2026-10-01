@@ -73,7 +73,9 @@ class AIFieldAutomatorAgentField extends AIFieldAutomatorBase {
   protected function buildEntityContext($entity, array $config) {
     $base = $config['base_field'] ?? '_title';
     if ($base === '_title') {
-      return 'Title: ' . entity_label($config['entity_type'] ?? 'node', $entity);
+      $type = $config['entity_type'] ?? 'node';
+      $label = method_exists($entity, 'label') ? $entity->label() : ($entity->title ?? ($entity->name ?? (function_exists('entity_label') ? entity_label($type, $entity) : '')));
+      return 'Title: ' . $label;
     }
     if ($base === '_rendered_entity') {
       return $this->extractEntityContextText($entity, $config['entity_type'] ?? '');

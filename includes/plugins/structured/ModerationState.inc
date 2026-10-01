@@ -149,7 +149,7 @@ class AIFieldAutomatorModerationState extends AIFieldAutomatorBase {
       $config['moderation_lookup_states'] ?? []
     );
     foreach ($values as $value) {
-      $state = trim((string) ($value['state'] ?? ''));
+      $state = is_array($value) ? trim((string) ($value['state'] ?? '')) : trim((string) $value);
       if ($state === '') {
         continue;
       }

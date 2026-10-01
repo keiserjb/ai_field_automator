@@ -97,12 +97,8 @@ class AIFieldAutomatorOfficeHours extends AIFieldAutomatorBase {
       return;
     }
 
-    $field_info = field_info_field($field_name);
-    if (empty($field_info['columns'])) {
-      return;
-    }
-
-    $columns = array_keys($field_info['columns']);
+    $field_info = field_info_field($field_name) ?: [];
+    $columns = !empty($field_info['columns']) ? array_keys($field_info['columns']) : ['day', 'starthours', 'endhours'];
     $items = [];
     foreach ($values as $value) {
       $item = [];

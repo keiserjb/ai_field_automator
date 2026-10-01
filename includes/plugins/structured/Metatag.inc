@@ -111,12 +111,10 @@ class AIFieldAutomatorMetatag extends AIFieldAutomatorBase {
     if (empty($values[0])) {
       return;
     }
-    $field_info = field_info_field($field_name);
-    if (empty($field_info)) {
-      return;
-    }
-    $column = $this->getPrimaryColumn($field_info);
-    $entity->{$field_name}[LANGUAGE_NONE][0][$column] = (string) $values[0];
+    $field_info = field_info_field($field_name) ?: [];
+    $column = !empty($field_info) ? $this->getPrimaryColumn($field_info) : 'value';
+    $val = is_array($values[0]) ? json_encode($values[0]) : (string) $values[0];
+    $entity->{$field_name}[LANGUAGE_NONE][0][$column] = $val;
   }
 
   /**

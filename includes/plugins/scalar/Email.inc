@@ -66,4 +66,25 @@ class AIFieldAutomatorEmail extends AIFieldAutomatorBase {
     return $values;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function storeValues(
+    $entity,
+    array $values,
+    $field_name,
+    array $config
+  ) {
+    if (empty($values)) {
+      return;
+    }
+    $field_info = field_info_field($field_name) ?: [];
+    $column = !empty($field_info['columns']) ? array_keys($field_info['columns'])[0] : 'email';
+    $items = [];
+    foreach ($values as $delta => $value) {
+      $items[$delta][$column] = $value;
+    }
+    $entity->{$field_name}[LANGUAGE_NONE] = $items;
+  }
+
 }

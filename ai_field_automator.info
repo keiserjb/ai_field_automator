@@ -3,7 +3,7 @@ description = Automatically populates entity fields with AI-generated content wh
 backdrop = 1.x
 type = module
 package = AI
-php = 8.2
+php = 8.0
 configure = admin/config/ai/ai-field-automator
 
 dependencies[] = ai

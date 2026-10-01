@@ -143,7 +143,7 @@ abstract class AIFieldAutomatorSearchBase extends AIFieldAutomatorBase {
       $parsed['id'] = (int) $value;
       return $parsed;
     }
-    if (preg_match('/^([a-z_]+)\/(\d+)$/i', $value, $matches)) {
+    if (preg_match('/^(?:entity:)?([a-z_]+)[:\/](\d+)$/i', $value, $matches)) {
       $parsed['entity_type'] = $matches[1];
       $parsed['id'] = (int) $matches[2];
     }

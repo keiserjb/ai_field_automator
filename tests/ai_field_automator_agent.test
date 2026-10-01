@@ -11,7 +11,7 @@ class AIFieldAutomatorAgentPluginTestCase extends BackdropWebTestCase {
     parent::setUp([
       'ai',
       'ai_tools',
-      'ai_agent',
+      'ai_agents',
       'ai_agent_test',
       'ai_field_automator',
     ]);
@@ -22,7 +22,7 @@ class AIFieldAutomatorAgentPluginTestCase extends BackdropWebTestCase {
     ]);
     $providers->save();
 
-    ai_agent_save_agents([
+    ai_agents_save_agents([
       'automator_agent' => [
         'label'                 => 'Automator Test Agent',
         'description'           => 'Agent for field automator tests.',
@@ -92,8 +92,7 @@ class AIFieldAutomatorRegenerateToolTestCase extends BackdropWebTestCase {
     parent::setUp([
       'ai',
       'ai_tools',
-      'ai_agent',
-      'ai_agent_test',
+      'ai_agents',
       'ai_field_automator',
     ]);
   }

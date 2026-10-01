@@ -80,12 +80,9 @@ class AIFieldAutomatorFaqField extends AIFieldAutomatorBase {
       return;
     }
 
-    $field_info = field_info_field($field_name);
-    if (empty($field_info['columns'])) {
-      return;
-    }
-    $columns = array_keys($field_info['columns']);
-    $primary = $this->getPrimaryColumn($field_info);
+    $field_info = field_info_field($field_name) ?: [];
+    $columns = !empty($field_info['columns']) ? array_keys($field_info['columns']) : ['question', 'answer'];
+    $primary = !empty($field_info) ? $this->getPrimaryColumn($field_info) : 'question';
 
     $items = [];
     foreach ($values as $value) {

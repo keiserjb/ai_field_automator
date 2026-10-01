@@ -36,6 +36,7 @@ function ai_field_automator_autoload_info() {
     'ai_field_automator\includes\plugins\scalar\AIFieldAutomatorTelephone'  => 'includes/plugins/scalar/Telephone.inc',
     'ai_field_automator\includes\plugins\scalar\AIFieldAutomatorOptions'    => 'includes/plugins/scalar/Options.inc',
     'ai_field_automator\includes\plugins\reference\AIFieldAutomatorTaxonomyTerms' => 'includes/plugins/reference/TaxonomyTerms.inc',
+    'ai_field_automator\includes\plugins\reference\AIFieldAutomatorTaxonomyClassification' => 'includes/plugins/reference/TaxonomyClassification.inc',
     'ai_field_automator\includes\plugins\reference\AIFieldAutomatorEntityReference' => 'includes/plugins/reference/EntityReference.inc',
     'ai_field_automator\includes\plugins\scalar\AIFieldAutomatorLink'       => 'includes/plugins/scalar/Link.inc',
     'ai_field_automator\includes\plugins\media\AIFieldAutomatorTextToImage' => 'includes/plugins/media/TextToImage.inc',
@@ -921,6 +922,13 @@ function ai_field_automator_ai_field_automator_type_info() {
       'class' => 'ai_field_automator\includes\plugins\reference\AIFieldAutomatorTaxonomyTerms',
       'file' => $base . '/includes/plugins/reference/TaxonomyTerms.inc',
     ],
+    'taxonomy_classification' => [
+      'label' => t('Taxonomy classification (Decision)'),
+      'description' => t('Classify content into taxonomy terms using calibrated decision models.'),
+      'field_types' => ['taxonomy_term_reference', 'list_text'],
+      'class' => 'ai_field_automator\includes\plugins\reference\AIFieldAutomatorTaxonomyClassification',
+      'file' => $base . '/includes/plugins/reference/TaxonomyClassification.inc',
+    ],
     'entity_reference' => [
       'label' => t('Entity reference'),
       'description' => t('Map generated values to existing referenceable entities.'),
@@ -1165,19 +1173,41 @@ function ai_field_automator_model_options($automator_type = '') {
     $callback = 'ai_get_all_vision_models';
   }
   elseif (in_array($automator_type, ['audio_to_text', 'video_to_text'], TRUE)) {
-    $callback = 'ai_get_all_models';
+    $callback = function_exists('ai_get_all_stt_models') ? 'ai_get_all_stt_models' : 'ai_get_all_models';
+  }
+  elseif ($automator_type === 'agent_field' && function_exists('ai_get_all_tool_calling_models')) {
+    $callback = 'ai_get_all_tool_calling_models';
+  }
+  elseif (strpos($automator_type, 'vector_search') !== FALSE && function_exists('ai_get_all_models_for_method')) {
+    $callback = function() {
+      return ai_get_all_models_for_method('getEmbeddingModels');
+    };
   }
 
-  if (!function_exists($callback)) {
-    return [];
+  if (is_callable($callback)) {
+    try {
+      $models = call_user_func($callback);
+      if (empty($models) && $callback !== 'ai_get_all_chat_models' && function_exists('ai_get_all_chat_models')) {
+        $models = ai_get_all_chat_models();
+      }
+      if (is_array($models)) {
+        ksort($models);
+        foreach ($models as $provider => &$pmodels) {
+          if (is_array($pmodels)) {
+            natcasesort($pmodels);
+          }
+        }
+        unset($pmodels);
+      }
+      return $models ?: [];
+    }
+    catch (\Exception $e) {
+      watchdog('ai_field_automator', 'Could not load model list: @msg', ['@msg' => $e->getMessage()], WATCHDOG_WARNING);
+      return [];
+    }
   }
-  try {
-    return $callback();
-  }
-  catch (\Exception $e) {
-    watchdog('ai_field_automator', 'Could not load model list: @msg', ['@msg' => $e->getMessage()], WATCHDOG_WARNING);
-    return [];
-  }
+
+  return [];
 }
 
 /**
